@@ -26,6 +26,16 @@ add_executable(example_app
 
 target_link_libraries(example_app PRIVATE liblogger_static)
 
+add_executable(server
+    server/server.cpp
+        server/statistics.cpp
+        server/log_parser.cpp)
+
+add_executable(server_test
+    tests/server_test.cpp)
+
+target_link_libraries(server_test PRIVATE liblogger_static)
+
 enable_testing()
 
 add_executable(library_tests
