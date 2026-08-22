@@ -3,9 +3,18 @@
 
 #include "logger/socket_logger.hpp"
 
-int main() {
+int main(int argc, char *argv[]) {
+
+    if (argc != 2) {
+        std::cout << "Usage: " << argv[0] << " <port>" << std::endl;
+        return 1;
+    }
+
     try {
-        SocketLogger logger("127.0.0.1", 9000, LogLevel::Info);
+        std::string portStr(argv[1]);
+        uint16_t port = stoi(portStr);
+
+        SocketLogger logger("127.0.0.1", port, LogLevel::Info);
 
         logger.log(LogLevel::Info, "Hello World");
         logger.log(LogLevel::Warning, "Hi");
