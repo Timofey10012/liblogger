@@ -11,8 +11,37 @@
 #include "logger/file_logger.hpp"
 #include "logger/socket_logger.hpp"
 
+// Per-process directory in the system temp dir: the tests don't depend on
+// the working directory and leave nothing behind.
+class TestDirectory {
+public:
+    TestDirectory()
+        : path_(std::filesystem::temp_directory_path() / ("liblogger_tests_" + std::to_string(getpid())))
+    {
+        std::filesystem::create_directories(path_);
+    }
+
+    ~TestDirectory() {
+        std::error_code error;
+        std::filesystem::remove_all(path_, error);
+    }
+
+    TestDirectory(const TestDirectory&) = delete;
+    TestDirectory& operator=(const TestDirectory&) = delete;
+
+    const std::filesystem::path& path() const { return path_; }
+
+private:
+    std::filesystem::path path_;
+};
+
+std::string testLogPath(const std::string& name) {
+    static const TestDirectory directory;
+    return (directory.path() / name).string();
+}
+
 void testMessageIsWritten() {
-    const std::string fileName = "testMessageIsWritten.log";
+    const std::string fileName = testLogPath("testMessageIsWritten.log");
     std::filesystem::remove(fileName);
 
     FileLogger logger(fileName, LogLevel::Info);
@@ -31,7 +60,7 @@ void testMessageIsWritten() {
 }
 
 void testMessageBelowLevelIsIgnored() {
-    const std::string fileName = "testMessageBelowLevelIsIgnored.log";
+    const std::string fileName = testLogPath("testMessageBelowLevelIsIgnored.log");
     std::filesystem::remove(fileName);
 
     FileLogger logger(fileName, LogLevel::Warning);
@@ -52,7 +81,7 @@ void testMessageBelowLevelIsIgnored() {
 }
 
 void testSetLogLevel() {
-    const std::string fileName = "testSetLogLevel.log";
+    const std::string fileName = testLogPath("testSetLogLevel.log");
     std::filesystem::remove(fileName);
 
     FileLogger logger(fileName, LogLevel::Warning);
