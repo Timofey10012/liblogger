@@ -55,7 +55,7 @@ void SocketLogger::log(LogLevel level, const std::string &message) {
         ssize_t sent = send(socketFd_,
             data.data() + totalSent,
             data.size() - totalSent,
-            0
+            MSG_NOSIGNAL
         );
 
         if (sent <= 0) {
