@@ -20,7 +20,7 @@ SocketLogger::SocketLogger(const std::string& ip, uint16_t port, LogLevel level)
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, ip.c_str(), &address.sin_addr) == -1) {
+    if (inet_pton(AF_INET, ip.c_str(), &address.sin_addr) != 1) {
         close(socketFd_);
         throw std::runtime_error("Failed to parse ip address");
     }

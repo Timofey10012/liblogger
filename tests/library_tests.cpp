@@ -413,6 +413,51 @@ void testSocketLoggerLeavesHostSigpipeHandlerAlone() {
     });
 }
 
+// A server must be listening on the port: a malformed address that is silently
+// treated as 0.0.0.0 would then connect to it, while without a server connect()
+// fails by itself and hides the problem.
+void testSocketLoggerInvalidAddressThrows() {
+    const char* invalidAddresses[] = {
+        "", "abc", "256.0.0.1", "127.0.0", "127.0.0.1.1", "127.0.0.1 ", " 127.0.0.1", "::1",
+    };
+
+    std::string accepted;
+
+    for (const char* address : invalidAddresses) {
+        ListeningSocket server = createListeningSocket();
+        bool threw = false;
+
+        try {
+            SocketLogger logger(address, server.port, LogLevel::Info);
+        } catch (const std::runtime_error&) {
+            threw = true;
+        }
+
+        close(server.fd);
+
+        if (!threw) {
+            accepted += std::string(" \"") + address + "\"";
+        }
+    }
+
+    if (!accepted.empty()) {
+        throw std::runtime_error("testSocketLoggerInvalidAddressThrows error: no exception for addresses:" + accepted);
+    }
+}
+
+void testSocketLoggerNoServerThrows() {
+    ListeningSocket server = createListeningSocket();
+    close(server.fd);
+
+    try {
+        SocketLogger logger("127.0.0.1", server.port, LogLevel::Info);
+    } catch (const std::runtime_error&) {
+        return;
+    }
+
+    throw std::runtime_error("testSocketLoggerNoServerThrows error: no exception when nothing listens on the port");
+}
+
 int runTest(const char* name, void (*test)()) {
     try {
         test();
@@ -437,6 +482,8 @@ int main() {
     failed += runTest("testSocketLoggerBelowLevelAfterPeerClosedIsSilent", testSocketLoggerBelowLevelAfterPeerClosedIsSilent);
     failed += runTest("testSocketLoggerLargeMessagePeerClosesMidway", testSocketLoggerLargeMessagePeerClosesMidway);
     failed += runTest("testSocketLoggerLeavesHostSigpipeHandlerAlone", testSocketLoggerLeavesHostSigpipeHandlerAlone);
+    failed += runTest("testSocketLoggerInvalidAddressThrows", testSocketLoggerInvalidAddressThrows);
+    failed += runTest("testSocketLoggerNoServerThrows", testSocketLoggerNoServerThrows);
 
     if (failed != 0) {
         std::cerr << failed << " test(s) failed" << std::endl;
